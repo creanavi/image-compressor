@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Pac-Man</title>
+<style>
+  body { background: #000; display: flex; justify-content: center; }
+  canvas { background: #000; border: 1px solid #555; margin-top: 20px; }
+</style>
+</head>
+<body>
+<canvas id="game" width="320" height="320"></canvas>
+<script>
+const tileSize = 16;
+const cols = 20;
+const rows = 20;
+const canvas = document.getElementById('game');
+const ctx = canvas.getContext('2d');
+
+// 0: empty, 1: wall, 2: pellet
+const map = [
+  "11111111111111111111",
+  "10000000000000000001",
+  "10111101111101111001",
+  "10200001000001000001",
+  "10101111011111011101",
+  "10001000010000010001",
+  "11101011110111110101",
+  "10001010000010000001",
+  "10111010111110111101",
+  "10000010100000100001",
+  "10111110101111101101",
+  "10000000001000000001",
+  "10111111101011111101",
+  "10000000000000000001",
+  "11111111111111111111"
+];
+let pacman = { x: 1, y: 1, dir: {x:1, y:0} };
+let ghost = { x: 18, y: 13, dir: {x:-1, y:0} };
+let pellets = 0;
+
+for (let row of map) for (let c of row) if (c === '0') pellets++;
+
+function draw() {
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  for (let y=0; y<rows; y++) {
+    for (let x=0; x<cols; x++) {
+      const cell = map[y][x];
+      if (cell === '1') {
+        ctx.fillStyle = '#0022cc';
+        ctx.fillRect(x*tileSize, y*tileSize, tileSize, tileSize);
+      } else if (cell === '0' || cell === '2') {
+        ctx.fillStyle = '#222';
+        ctx.fillRect(x*tileSize, y*tileSize, tileSize, tileSize);
+        if (cell === '0') {
+          ctx.fillStyle = '#fff';
+          ctx.beginPath();
+          ctx.arc(x*tileSize+tileSize/2, y*tileSize+tileSize/2, 3, 0, Math.PI*2);
+          ctx.fill();
+        }
+      }
+    }
+  }
+  // Pac-Man
+  ctx.fillStyle = 'yellow';
+  ctx.beginPath();
+  ctx.arc(pacman.x*tileSize+tileSize/2, pacman.y*tileSize+tileSize/2, tileSize/2-1, 0, Math.PI*2);
+  ctx.fill();
+  // Ghost
+  ctx.fillStyle = 'red';
+  ctx.beginPath();
+  ctx.arc(ghost.x*tileSize+tileSize/2, ghost.y*tileSize+tileSize/2, tileSize/2-1, 0, Math.PI*2);
+  ctx.fill();
+}
+
+function move(entity) {
+  const nx = entity.x + entity.dir.x;
+  const ny = entity.y + entity.dir.y;
+  if (map[ny][nx] !== '1') {
+    entity.x = nx;
+    entity.y = ny;
+  }
+}
+
+function randomDir() {
+  const dirs = [ {x:1,y:0}, {x:-1,y:0}, {x:0,y:1}, {x:0,y:-1} ];
+  return dirs[Math.floor(Math.random()*dirs.length)];
+}
+
+function update() {
+  move(pacman);
+  // eat pellets
+  if (map[pacman.y][pacman.x] === '0') {
+    map[pacman.y] = map[pacman.y].substring(0,pacman.x) + '2' + map[pacman.y].substring(pacman.x+1);
+    pellets--;
+    if (pellets===0) alert('You win!');
+  }
+  // ghost movement
+  if (Math.random()<0.3) ghost.dir = randomDir();
+  move(ghost);
+  if (ghost.x===pacman.x && ghost.y===pacman.y) {
+    alert('Game Over!');
+    reset();
+  }
+  draw();
+}
+
+function reset() {
+  pacman.x=1; pacman.y=1; pacman.dir={x:1,y:0};
+  ghost.x=18; ghost.y=13; ghost.dir={x:-1,y:0};
+  // reset pellets
+  pellets=0;
+  for(let y=0;y<map.length;y++){
+    map[y]=map[y].replace(/2/g,'0');
+    for(let c of map[y]) if(c==='0') pellets++;}
+}
+
+document.addEventListener('keydown', e=>{
+  if (e.key==='ArrowUp') pacman.dir={x:0,y:-1};
+  else if (e.key==='ArrowDown') pacman.dir={x:0,y:1};
+  else if (e.key==='ArrowLeft') pacman.dir={x:-1,y:0};
+  else if (e.key==='ArrowRight') pacman.dir={x:1,y:0};
+});
+reset();
+setInterval(update, 200);
+</script>
+</body>
+</html>
